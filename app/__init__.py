@@ -1,0 +1,1 @@
+"""EventTix application package."""
