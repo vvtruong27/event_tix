@@ -16,40 +16,33 @@ class Base(DeclarativeBase):
 
     pass
 
-
 class User(Base):
-    """User account record.
-
-    Stores identity and credential hash only; never stores plaintext secrets.
-    """
-
     __tablename__ = "users"
 
     id: Mapped[int] = mapped_column(primary_key=True)
     email: Mapped[str] = mapped_column(String(255), unique=True, index=True)
     hashed_password: Mapped[str] = mapped_column(String(255))
-    # Use UTC timestamps to avoid timezone ambiguity across services.
-    created_at: Mapped[datetime] = mapped_column(default=lambda: datetime.now(timezone.utc))
+    
+    # FIX: Strip the tzinfo so it matches PostgreSQL's WITHOUT TIME ZONE column!
+    created_at: Mapped[datetime] = mapped_column(
+        default=lambda: datetime.now(timezone.utc).replace(tzinfo=None)
+    )
 
-    # One-to-many: a single user can own multiple ticket records.
     tickets: Mapped[List["TicketOwnership"]] = relationship(back_populates="owner")
 
 
 class TicketOwnership(Base):
-    """Record of a purchased/owned ticket linked to a user."""
-
     __tablename__ = "ticket_ownership"
 
     id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
-
-    # References the event identifier from the event catalog datastore.
     event_id: Mapped[str] = mapped_column(String(50), index=True)
-
     seat_number: Mapped[str] = mapped_column(String(10))
-    # Monetary values are stored in cents to avoid floating-point precision issues.
     price_paid: Mapped[int] = mapped_column()
-    purchased_at: Mapped[datetime] = mapped_column(default=lambda: datetime.now(timezone.utc))
+    
+    # FIX: Strip the tzinfo here too!
+    purchased_at: Mapped[datetime] = mapped_column(
+        default=lambda: datetime.now(timezone.utc).replace(tzinfo=None)
+    )
 
-    # Inverse side of User.tickets.
     owner: Mapped["User"] = relationship(back_populates="tickets")
