@@ -5,14 +5,14 @@ and exposes a small health-style root endpoint for quick verification.
 """
 
 from fastapi import FastAPI
-from app.api import users
+from app.api import events, users
 
 # Create one global application object used by ASGI servers (uvicorn/gunicorn).
 app = FastAPI(title="EventTix API", description="High-Concurrency Ticketing Platform")
 
 # Register feature routers. Each router owns its own URL prefix and tags.
 app.include_router(users.router)
-
+app.include_router(events.router)
 
 @app.get("/")
 async def root():
