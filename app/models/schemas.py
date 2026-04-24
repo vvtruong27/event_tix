@@ -27,3 +27,19 @@ class UserResponse(BaseModel):
     class Config:
         # Enable conversion from ORM instances returned by SQLAlchemy.
         from_attributes = True
+
+class TicketPurchase(BaseModel):
+    """Payload for when a user attempts to buy a ticket."""
+    user_id: int
+    event_id: str
+    tier_name: str    # e.g., "VIP Floor" or "General Admission"
+
+class TicketResponse(BaseModel):
+    """Response returned when a ticket is successfully purchased."""
+    id: int
+    event_id: str
+    seat_number: str
+    price_paid: int
+
+    class Config:
+        from_attributes = True

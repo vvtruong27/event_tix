@@ -2,6 +2,7 @@ from motor.motor_asyncio import AsyncIOMotorDatabase
 from bson import ObjectId
 from app.models.nosql_models import EventDocument
 from typing import List
+from app.core.database import redis_client
 
 class EventRepository:
     def __init__(self, db: AsyncIOMotorDatabase):
@@ -17,6 +18,12 @@ class EventRepository:
         
         # 3. Attach the generated ObjectId back to the model and return it
         event.id = str(result.inserted_id)
+
+        for tier in event.ticket_tiers:
+            redis_key = f"event:{event.id}:tier:{tier.tier_name}:available"
+            # Set the exact number from MongoDB into Redis
+            await redis_client.set(redis_key, tier.available_seats)
+
         return event
 
     async def get_all_events(self) -> List[EventDocument]:
