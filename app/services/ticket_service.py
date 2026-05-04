@@ -53,7 +53,8 @@ class TicketService:
                 user_id=purchase.user_id,
                 event_id=purchase.event_id,
                 tier_name=purchase.tier_name,
-                seat_number=seat_num
+                seat_number=seat_num,
+                price_paid=ticket_price # <--- ADD THIS LINE!
             )
             db.add(new_ticket)
             

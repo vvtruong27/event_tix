@@ -4,6 +4,7 @@ Keep these models focused on API contracts (validation + serialization),
 separate from SQLAlchemy persistence models.
 """
 
+from datetime import datetime
 from pydantic import BaseModel, EmailStr, Field
 
 class UserCreate(BaseModel):
@@ -41,5 +42,30 @@ class TicketResponse(BaseModel):
     seat_number: str
     price_paid: int
 
+    class Config:
+        from_attributes = True
+
+class UserProfileResponse(BaseModel):
+    """Schema for returning the user's profile and wallet balance."""
+    id: int
+    email: str
+    balance_cents: int
+    
+    class Config:
+        from_attributes = True
+
+class DepositRequest(BaseModel):
+    """Schema for adding money to the wallet."""
+    amount_cents: int
+
+class MyTicketResponse(BaseModel):
+    """Schema for viewing a purchased ticket."""
+    id: int
+    event_id: str
+    tier_name: str
+    seat_number: str
+    price_paid: int
+    purchased_at: datetime
+    
     class Config:
         from_attributes = True

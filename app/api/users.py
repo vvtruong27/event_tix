@@ -15,6 +15,15 @@ from app.models.sql_models import User
 from app.models.schemas import UserCreate, UserResponse
 from app.core.security import get_password_hash, verify_password, create_access_token # <-- UPDATE THIS
 
+# Add TicketOwnership to your existing sql_models import
+from app.models.sql_models import User, TicketOwnership 
+
+# Add the new schemas to your existing schemas import
+from app.models.schemas import UserCreate, UserResponse, UserProfileResponse, DepositRequest, MyTicketResponse
+
+# Make sure you have get_current_user_id imported from security
+from app.core.security import get_current_user_id
+
 router = APIRouter(prefix="/users", tags=["Users"])
 
 
@@ -70,3 +79,57 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: AsyncSessi
     
     # 4. Return it in the exact format FastAPI expects
     return {"access_token": access_token, "token_type": "bearer"}
+
+# --- FRONTEND SUPPORT APIs ---
+
+@router.get("/me", response_model=UserProfileResponse)
+async def get_my_profile(
+    current_user_id: int = Depends(get_current_user_id), 
+    db: AsyncSession = Depends(get_db)
+):
+    """Fetch the logged-in user's profile and current wallet balance."""
+    result = await db.execute(select(User).where(User.id == current_user_id))
+    user = result.scalars().first()
+    
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user
+
+
+@router.post("/me/deposit", response_model=UserProfileResponse)
+async def deposit_funds(
+    deposit: DepositRequest,
+    current_user_id: int = Depends(get_current_user_id), 
+    db: AsyncSession = Depends(get_db)
+):
+    """Deposit virtual money into the logged-in user's wallet."""
+    if deposit.amount_cents <= 0:
+        raise HTTPException(status_code=400, detail="Deposit amount must be greater than 0.")
+
+    result = await db.execute(select(User).where(User.id == current_user_id))
+    user = result.scalars().first()
+    
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+        
+    # Add the money and save to database
+    user.balance_cents += deposit.amount_cents
+    await db.commit()
+    await db.refresh(user)
+    
+    return user
+
+
+@router.get("/me/tickets", response_model=list[MyTicketResponse])
+async def get_my_tickets(
+    current_user_id: int = Depends(get_current_user_id), 
+    db: AsyncSession = Depends(get_db)
+):
+    """View all tickets purchased by the logged-in user."""
+    # Query the database for all tickets owned by this specific user
+    result = await db.execute(
+        select(TicketOwnership).where(TicketOwnership.user_id == current_user_id)
+    )
+    tickets = result.scalars().all()
+    
+    return tickets
