@@ -22,7 +22,8 @@ class User(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     email: Mapped[str] = mapped_column(String(255), unique=True, index=True)
     hashed_password: Mapped[str] = mapped_column(String(255))
-    
+    balance_cents: Mapped[int] = mapped_column(default=0)
+
     # FIX: Strip the tzinfo so it matches PostgreSQL's WITHOUT TIME ZONE column!
     created_at: Mapped[datetime] = mapped_column(
         default=lambda: datetime.now(timezone.utc).replace(tzinfo=None)

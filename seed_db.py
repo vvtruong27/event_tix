@@ -27,15 +27,18 @@ async def seed():
     # 2. Seed Users
     print("👤 Creating test users...")
     async with AsyncSessionLocal() as db:
-        # We give them a simple, standard password for testing
-        user1 = User(email="alice@test.com", hashed_password=get_password_hash("password123"))
-        user2 = User(email="bob@test.com", hashed_password=get_password_hash("password123"))
+        user1 = User(
+            email="alice@test.com", 
+            hashed_password=get_password_hash("password123"),
+            balance_cents=100000 # Alice gets $1,000
+        )
+        user2 = User(
+            email="bob@test.com", 
+            hashed_password=get_password_hash("password123"),
+            balance_cents=100000 # Bob gets $1,000
+        )
         db.add_all([user1, user2])
         await db.commit()
-        await db.refresh(user1)
-        await db.refresh(user2)
-        print(f"  -> Created User: {user1.email} (ID: {user1.id})")
-        print(f"  -> Created User: {user2.email} (ID: {user2.id})")
 
     # 3. Seed Events
     print("🎟️ Creating test events...")
@@ -59,6 +62,7 @@ async def seed():
     print(f"     (Event ID: {created_event.id})")
 
     print("\n✅ Database successfully seeded! You can now test the API.")
+
 
 if __name__ == "__main__":
     # Run the async seed function
