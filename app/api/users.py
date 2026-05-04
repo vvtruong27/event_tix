@@ -6,13 +6,14 @@ query the database asynchronously, and return a response schema.
 """
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordRequestForm # <-- ADD THIS
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
 from app.core.database import get_db
 from app.models.sql_models import User
 from app.models.schemas import UserCreate, UserResponse
-from app.core.security import get_password_hash
+from app.core.security import get_password_hash, verify_password, create_access_token # <-- UPDATE THIS
 
 router = APIRouter(prefix="/users", tags=["Users"])
 
@@ -47,3 +48,25 @@ async def create_user(user_in: UserCreate, db: AsyncSession = Depends(get_db)):
 
     # FastAPI serializes ORM object using the declared response_model.
     return new_user
+
+@router.post("/login")
+async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: AsyncSession = Depends(get_db)):
+    """Authenticate a user and return a JWT."""
+    
+    # 1. Find the user in the database (OAuth2 uses 'username' by default, but we map it to email)
+    result = await db.execute(select(User).where(User.email == form_data.username))
+    user = result.scalars().first()
+
+    # 2. Check if the user exists AND the password matches
+    if not user or not verify_password(form_data.password, user.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect email or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    # 3. Success! Generate the token (putting the user's ID inside the "sub" field)
+    access_token = create_access_token(data={"sub": str(user.id)})
+    
+    # 4. Return it in the exact format FastAPI expects
+    return {"access_token": access_token, "token_type": "bearer"}
